@@ -448,8 +448,8 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
       const totalPnl = finiteNumber(metrics.total_pnl_krw);
       const principal = (totalAsset !== null && totalPnl !== null) ? totalAsset - totalPnl : null;
 
-      const min = Math.min(...runs.map((p) => p.v), principal ?? Infinity);
-      const max = Math.max(...runs.map((p) => p.v), principal ?? -Infinity);
+      const min = Math.min(...runs.map((p) => p.v));
+      const max = Math.max(...runs.map((p) => p.v));
       const range = max - min || 1;
       // 여백 추가: min/max에 패딩
       const padRange = range * 0.06;
