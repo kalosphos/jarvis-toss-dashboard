@@ -389,15 +389,6 @@ h3 {
 	text-align: right;
 	justify-content: flex-end;
 }
-.asset-est-badge {
-	font-size: 11px;
-	padding: 2px 8px;
-	border-radius: 10px;
-	background: var(--surface-raised);
-	color: var(--text-muted);
-	border: 1px solid var(--border);
-	white-space: nowrap;
-}
 
 .asset-change {
   white-space: nowrap;
@@ -1158,4 +1149,24 @@ h3 {
   .quote-row-name { font-weight: 600; }
   .quote-row-last { color: var(--text-muted); }
   .quote-updated { margin-top: 10px; font-size: 0.8rem; color: var(--text-muted); }
+
+/* 1일 탭 토스 스타일: 기간 시작 대비 상승/하락 단일 톤 */
+.asset-chart .chart-tone-up {
+  stroke: #6ea8fe;
+  fill: rgba(110,168,254,0.18);
+}
+.asset-chart .chart-tone-down {
+  stroke: #f28b82;
+  fill: rgba(242,139,130,0.18);
+}
+.asset-chart .chart-tone-flat {
+  stroke: var(--muted);
+  fill: rgba(150,150,150,0.15);
+}
+.asset-chart .chart-tone-up,
+.asset-chart .chart-tone-down,
+.asset-chart .chart-tone-flat {
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
 }

@@ -71,12 +71,9 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
           <div class="asset-total" id="asset-total">-</div>
         </div>
         <div class="asset-periods" aria-label="자산 추이 기간">
-          <button type="button" class="period-tab is-selected" id="period-1d" aria-pressed="true">1D</button>
-          <button type="button" class="period-tab" id="period-7d" aria-pressed="false">7D</button>
+          <button type="button" class="period-tab is-selected" id="period-1d" aria-pressed="true">1일</button>
+          <button type="button" class="period-tab" id="period-7d" aria-pressed="false">7일</button>
           <button type="button" class="period-tab" id="period-1m" aria-pressed="false">1개월</button>
-          <button type="button" class="period-tab" id="period-3m" aria-pressed="false">3개월</button>
-          <button type="button" class="period-tab" id="period-6m" aria-pressed="false">6개월</button>
-          <button type="button" class="period-tab" id="period-1y" aria-pressed="false">1년</button>
           <button type="button" class="period-tab" id="period-all" aria-pressed="false">전체</button>
         </div>
       </div>
@@ -84,7 +81,6 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
         <div class="asset-change-wrap">
           <div class="asset-change" id="asset-change"></div>
           <div class="asset-prev-close" id="asset-prev-close"></div>
-          <span class="asset-est-badge" id="asset-est-badge" hidden>시세 추정</span>
         </div>
         <div class="asset-chart-wrap">
           <svg class="asset-chart" id="asset-chart" role="img" aria-label="총자산 추이">
@@ -352,8 +348,7 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
       if (!points.length) return [];
       const lastT = points[points.length - 1].t;
       const windows = {
-        "1d": 1 * 86400000, "7d": 7 * 86400000, "1m": 30 * 86400000, "3m": 90 * 86400000,
-        "6m": 6 * 30 * 86400000, "1y": 365 * 86400000,
+        "1d": 1 * 86400000, "7d": 7 * 86400000, "1m": 30 * 86400000,
         "all": Infinity
       };
       if (period === "all") return points;
@@ -373,7 +368,7 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
     }
 
     function periodLabel(period) {
-      const labels = { "1d": "1D", "7d": "7D", "1m": "1개월", "3m": "3개월", "6m": "6개월", "1y": "1년", "all": "전체" };
+      const labels = { "1d": "1일", "7d": "7일", "1m": "1개월", "all": "전체" };
       return labels[period] ?? "전체";
     }
 
@@ -388,9 +383,6 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
       const xaxis = byId("asset-chart-xaxis");
       xaxis.replaceChildren();
       chart.replaceChildren();
-      // 이전 렌더에서 부모에 추가된 토스 스타일 라벨 정리
-      chart.parentElement.querySelectorAll(".asset-chart-avg-label, .asset-chart-extreme").forEach((el) => el.remove());
-
       // 컨테이너 실제 폭을 viewBox width로 사용 (창 크기 따라 자동 조절)
       const wrapRect = chart.parentElement.getBoundingClientRect();
       const vbWidth = Math.max(320, Math.round(wrapRect.width || 600));
@@ -405,34 +397,21 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
       chart.append(svgDefs);
 
       // 해상도별 데이터 소스 분기:
-      // 1일/7일 = 장중 3분 데이터 (dashboard-history.json)
-      // 1개월/6개월/1년/전체 = 일봉 (dashboard-daily.json)
-      const useDaily = ["1m", "3m", "6m", "1y", "all"].includes(state.assetPeriod);
+      // 1일/7일 = 장중 3분 데이터 (history, intraday)
+      // 1개월/전체 = 일봉 (daily)
+      const useDaily = ["1m", "all"].includes(state.assetPeriod);
       const rawHistory = useDaily
         ? (isRecord(state.data) && Array.isArray(state.data.daily) ? state.data.daily : [])
         : (isRecord(state.data) ? state.data.history : []);
       const points = assetPoints(rawHistory);
       let filtered = getPeriodWindow(state.assetPeriod, points);
       
-      // 추정 포인트 비율 배지
-      const estBadge = byId("asset-est-badge");
-      if (estBadge) {
-        const estCount = filtered.filter(p => p.estimated).length;
-        const totCount = filtered.length;
-        if (estCount > 0 && totCount > 0) {
-          estBadge.hidden = false;
-          estBadge.textContent = `시세 추정 ${Math.round(estCount / totCount * 100)}%`;
-        } else {
-          estBadge.hidden = true;
-        }
-      }
-      
-      // 1개월 이상 기간은 일별 집계 (하나의 점 = 하루의 마지막 값)
+      // 1개월/전체 기간은 일별 집계 (하나의 점 = 하루의 마지막 값)
       // 1일/7일은 인트라데이 데이터 모두 표시
-      if (["1m", "3m", "6m", "1y", "all"].includes(state.assetPeriod)) {
+      if (["1m", "all"].includes(state.assetPeriod)) {
         filtered = aggregateDaily(filtered);
       }
-
+      
       // 병합: 급변하지 않은 연속 데이터는 하나의 세그먼트로 합치기
       const runs = [];
       filtered.forEach((point) => {
@@ -522,28 +501,6 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
         chart.append(svgCreate("line", { x1: padLeft, x2: width - padRight, y1: principalY, y2: principalY, class: "chart-principal" }));
       }
 
-      // 토스 스타일: 기간 내 평균 총자산 수평선 ("내 자산 평균")
-      const avgVal = runs.reduce((s, p) => s + p.v, 0) / (runs.length || 1);
-      const avgY = toY(avgVal);
-      chart.append(svgCreate("line", { x1: padLeft, x2: width - padRight, y1: avgY, y2: avgY, class: "chart-avg" }));
-      const avgLabel = create("span", "asset-chart-avg-label", "내 자산 평균 " + formatKrw(avgVal) + "원");
-      avgLabel.style.top = (avgY / height * 100) + "%";
-      avgLabel.style.left = "4%";
-      chart.parentElement.appendChild(avgLabel);
-
-      // 토스 스타일: 기간 내 최고/최저 라벨
-      let hi = runs[0], lo = runs[0];
-      runs.forEach((p) => { if (p.v > hi.v) hi = p; if (p.v < lo.v) lo = p; });
-      const hiY = toY(hi.v), loY = toY(lo.v);
-      const hiLabel = create("span", "asset-chart-extreme asset-chart-high", "최고 " + formatKrw(hi.v) + "원");
-      hiLabel.style.top = (hiY / height * 100) + "%";
-      hiLabel.style.left = "4%";
-      chart.parentElement.appendChild(hiLabel);
-      const loLabel = create("span", "asset-chart-extreme asset-chart-low", "최저 " + formatKrw(lo.v) + "원");
-      loLabel.style.top = (loY / height * 100) + "%";
-      loLabel.style.left = "4%";
-      chart.parentElement.appendChild(loLabel);
-
       // 시간축 (하단) - 5개의 시간 레이블 (HTML로 분리해 고정 폰트 유지)
       const timeCount = runs.length;
       const timeIndexes = [...new Set([0, Math.floor((timeCount - 1) * 0.25), Math.floor((timeCount - 1) * 0.5), Math.floor((timeCount - 1) * 0.75), timeCount - 1])];
@@ -571,14 +528,17 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
 
       // 면적 경로 (전체)
       const areaPath = "M " + xs[0] + " " + (height - padBottom) + " L " + runs.map((_, i) => xs[i] + " " + ys[i]).join(" L ") + " L " + xs[xs.length - 1] + " " + (height - padBottom) + " Z";
+      const linePoints = runs.map((_, i) => xs[i] + "," + ys[i]).join(" ");
 
       // 1일 탭: 토스 스타일 (기간 시작 대비 상승/하락 단일 톤, 클립 분할 없음)
+      // 인라인 스타일 직접 지정 (CSS 캐시/의존 제거)
       const isTossDayStyle = state.assetPeriod === "1d";
       if (isTossDayStyle) {
-        const toneCls = tone === "up" ? "chart-tone-up" : (tone === "down" ? "chart-tone-down" : "chart-tone-flat");
-        const areaDay = svgCreate("path", { d: areaPath, class: "chart-area " + toneCls });
+        const toneColor = tone === "up" ? "#6ea8fe" : (tone === "down" ? "#f28b82" : "var(--muted)");
+        const toneFill = tone === "up" ? "rgba(110,168,254,0.18)" : (tone === "down" ? "rgba(242,139,130,0.18)" : "rgba(150,150,150,0.15)");
+        const areaDay = svgCreate("path", { d: areaPath, fill: toneFill, stroke: "none" });
         chart.append(areaDay);
-        const lineDay = svgCreate("polyline", { points: linePoints, class: "chart-line " + toneCls });
+        const lineDay = svgCreate("polyline", { points: linePoints, fill: "none", stroke: toneColor, "stroke-width": "2", "vector-effect": "non-scaling-stroke" });
         chart.append(lineDay);
       } else {
       // 상/하 클립 영역 정의 (기준선 기준 분할 색상)
@@ -601,13 +561,13 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
       chart.append(areaBottom);
 
       // 라인 (위/아래 분할)
-      const linePoints = runs.map((_, i) => xs[i] + "," + ys[i]).join(" ");
       const lineTop = svgCreate("polyline", { points: linePoints, class: "chart-line chart-line-up" });
       lineTop.setAttribute("clip-path", "url(#" + clipTop + ")");
       chart.append(lineTop);
       const lineBottom = svgCreate("polyline", { points: linePoints, class: "chart-line chart-line-down" });
       lineBottom.setAttribute("clip-path", "url(#" + clipBottom + ")");
       chart.append(lineBottom);
+      }
 
       // 호버 카드 (클릭 시 표시)
       chart.addEventListener("mousemove", (evt) => {
@@ -1302,7 +1262,7 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
 
     function setAssetPeriod(period) {
       state.assetPeriod = period;
-      const tabs = ["1d", "7d", "1m", "6m", "1y", "all"];
+      const tabs = ["1d", "7d", "1m", "all"];
       tabs.forEach((tab) => {
         const el = byId("period-" + tab);
         el.classList.toggle("is-selected", tab === period);
@@ -1318,9 +1278,6 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
     byId("period-1d").addEventListener("click", () => setAssetPeriod("1d"));
     byId("period-7d").addEventListener("click", () => setAssetPeriod("7d"));
     byId("period-1m").addEventListener("click", () => setAssetPeriod("1m"));
-    byId("period-3m").addEventListener("click", () => setAssetPeriod("3m"));
-    byId("period-6m").addEventListener("click", () => setAssetPeriod("6m"));
-    byId("period-1y").addEventListener("click", () => setAssetPeriod("1y"));
     byId("period-all").addEventListener("click", () => setAssetPeriod("all"));
 
     const topStocksButton = byId("top-stocks-button");

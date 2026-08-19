@@ -23,6 +23,9 @@ news_briefing.json
 news_briefing_manual.json
 briefing-macro.json
 jarvis_config.json
+jarvis.sqlite
+*.sqlite
+*.db
 
 # ===== Lock / snapshot / backup artifacts =====
 *.lock
