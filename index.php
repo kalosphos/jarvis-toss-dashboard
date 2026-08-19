@@ -471,14 +471,18 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
 
       const first = runs[0];
       const last = runs[runs.length - 1];
-      const difference = last.v - first.v;
-      const rate = first.v ? difference / first.v : 0;
+      // 전체 탭은 첫/마지막 차이 대신 투자원금(총자산 기준값) 대비 현재값 변화
+      const isAllPeriod = state.assetPeriod === "all";
+      const baseV = (isAllPeriod && principal !== null) ? principal : first.v;
+      const baseLabel = isAllPeriod ? "투자원금" : periodLabel(state.assetPeriod);
+      const difference = last.v - baseV;
+      const rate = baseV ? difference / baseV : 0;
       const tone = pnlClass(difference);
 
       // 변화 카드
       const changeText = (difference > 0 ? "+" : "") + formatKrw(difference) + "원 (" + formatPct(rate) + ")";
       change.className = "asset-change" + (tone ? " " + tone : "");
-      change.innerHTML = "<span class=\"asset-change-period\">" + periodLabel(state.assetPeriod) + "</span> " + changeText;
+      change.innerHTML = "<span class=\"asset-change-period\">" + baseLabel + "</span> " + changeText;
       chart.className.baseVal = "asset-chart" + (tone ? " " + tone : "");
       chart.setAttribute("aria-label", "총자산 " + periodLabel(state.assetPeriod) + " 변동 " + changeText);
 
