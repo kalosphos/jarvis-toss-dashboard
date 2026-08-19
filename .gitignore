@@ -1,0 +1,50 @@
+# ===== Secrets / credentials (절대 커밋 금지) =====
+db_config.php
+.private/
+.control/
+
+# ===== Runtime data (개인 금융/운영 상태 — 비공개) =====
+dashboard-data.json
+dashboard-data.json.*
+dashboard-history.json
+auto-execution-state.json
+auto-execution-state.json.*
+auto-trading-status.json
+auto-trading-status.json.*
+ai-daily-briefing.json
+ai-daily-briefing-history.json
+daily-trade-plan.json
+daily-trade-plan.json.*
+.kr_screen_cache.json
+quotes-data.json
+dashboard-daily.json
+jarvis-atm-status.json
+news_briefing.json
+news_briefing_manual.json
+briefing-macro.json
+jarvis_config.json
+
+# ===== Lock / snapshot / backup artifacts =====
+*.lock
+*.snapshot
+*.bak-*
+.backup-*/
+
+# ===== Logs =====
+logs/
+
+# ===== Build / vendor archives =====
+jarvis-toss-sources.tar.gz
+__pycache__/
+*.pyc
+
+# ===== Misc operational / macOS =====
+.DS_Store
+._*
+.sync-dashboard-src.sh
+.hermes-backup-*/
+trading-complete-analysis.xlsx
+
+# ===== Duplicate / backup copies =====
+dashboard_bak.css
+dashboard 복사본.css

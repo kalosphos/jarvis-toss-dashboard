@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KODEX 실시간 운용 대시보드</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0d1117; --fg:#e6edf3; --muted:#7d8590;
+  --card:#161b22; --border:#30363d;
+  --up:#3fb950; --down:#f85149; --line:#58a6ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo",sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:16px}
+h1{font-size:16px;font-weight:600}
+#status{font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:900px){.grid{grid-template-columns:2fr 1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px}
+.card h2{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.chart-wrap{position:relative;height:320px}
+.chart-wrap.tall{height:480px}
+.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.kv:last-child{border-bottom:0}
+.kv b{font-variant-numeric:tabular-nums}
+.up{color:var(--up)}.down{color:var(--down)}
+.period{display:flex;gap:4px;margin-bottom:8px}
+.period button{background:transparent;color:var(--muted);border:1px solid var(--border);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer}
+.period button.active{background:var(--line);color:#fff;border-color:var(--line)}
+</style>
+</head>
+<body>
+<header>
+<h1>🪶 KODEX 실시간 운용 대시보드</h1>
+<span id="status">불러오는 중…</span>
+</header>
+<div class="grid">
+  <div>
+    <div class="card">
+      <div class="period" id="periodSel">
+        <button data-p="today" class="active">오늘</button>
+        <button data-p="7d">7일</button>
+        <button data-p="30d">30일</button>
+        <button data-p="all">전체</button>
+      </div>
+      <div class="chart-wrap tall"><canvas id="bigChart"></canvas></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>전체 추이</h2>
+      <div class="chart-wrap"><canvas id="overview"></canvas></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>실시간 지표</h2>
+      <div id="metrics"></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>오늘 기록</h2>
+      <div id="todayLog" style="font-size:12px;max-height:300px;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
+<script>
+const HISTORY_URL = 'dashboard-history.json';
+const REFRESH_MS = 30000;
+let allData = [];
+let bigChart, overviewChart;
+let period = 'today';
+
+const fmt = (n) => new Intl.NumberFormat('ko-KR',{maximumFractionDigits:0}).format(Math.round(n));
+const fmtPct = (n) => (n>=0?'+':'')+(n*100).toFixed(2)+'%';
+
+function parseTs(s){return new Date(s)}
+function inPeriod(d){
+  const t=parseTs(d.generated_at);
+  const now=new Date();
+  if(period==='today') return t.toDateString()===now.toDateString();
+  if(period==='7d'){const b=new Date();b.setDate(b.getDate()-7);return t>=b}
+  if(period==='30d'){const b=new Date();b.setDate(b.getDate()-30);return t>=b}
+  return true;
+}
+
+function buildChart(ctx,data,opts={}){
+  return new Chart(ctx,{
+    type:'line',
+    data:{labels:data.labels,datasets:data.datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#e6edf3',boxWidth:10,font:{size:11}}}},
+      scales:{
+        x:{ticks:{color:'#7d8590',maxTicksLimit:10,font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}},
+        y:{ticks:{color:'#7d8590',callback:v=>'₩'+fmt(v),font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}}
+      },...opts
+    }
+  });
+}
+
+function renderMetrics(d){
+  const wrap=document.getElementById('metrics');
+  if(!d){wrap.innerHTML='<div class="kv">데이터 없음</div>';return}
+  const ret=(d.operating_return_rate||0);
+  wrap.innerHTML=`
+    <div class="kv"><span>현재 총자산</span><b>₩${fmt(d.account_total_asset_krw)}</b></div>
+    <div class="kv"><span>운용자금</span><b>₩${fmt(d.current_operating_capital_krw)}</b></div>
+    <div class="kv"><span>운용 평가</span><b>₩${fmt(d.operating_evaluated_krw)}</b></div>
+    <div class="kv"><span>보호 평가</span><b>₩${fmt(d.protected_evaluated_krw)}</b></div>
+    <div class="kv"><span>운용 수익률</span><b class="${ret>=0?'up':'down'}">${fmtPct(ret)}</b></div>
+  `;
+}
+
+function renderTodayLog(){
+  const today=new Date().toDateString();
+  const todayPts=allData.filter(x=>parseTs(x.generated_at).toDateString()===today);
+  const wrap=document.getElementById('todayLog');
+  if(!todayPts.length){wrap.innerHTML='<div class="kv">오늘 기록 없음</div>';return}
+  wrap.innerHTML=todayPts.slice().reverse().map(d=>`
+    <div class="kv"><span>${d.generated_at.slice(11,19)}</span><b>₩${fmt(d.current_operating_capital_krw)}</b> <span style="color:var(--muted)">/ ₩${fmt(d.account_total_asset_krw)}</span></div>
+  `).join('');
+}
+
+function renderCharts(){
+  const filtered=allData.filter(inPeriod).sort((a,b)=>parseTs(a.generated_at)-parseTs(b.generated_at));
+  const labels=filtered.map(d=>period==='today'?d.generated_at.slice(11,16):d.generated_at.slice(5,16));
+  const op=filtered.map(d=>d.current_operating_capital_krw);
+  const ta=filtered.map(d=>d.account_total_asset_krw);
+  const baseline=filtered.length?filtered.map(()=>(allData[0]||{}).current_operating_capital_krw||0):[];
+
+  if(bigChart)bigChart.destroy();
+  bigChart=buildChart(document.getElementById('bigChart'),{labels,datasets:[
+    {label:'총자산',borderColor:'#a371f7',backgroundColor:'rgba(163,113,247,.12)',data:ta,fill:true,tension:.25,pointRadius:0,borderWidth:1.8},
+    {label:'운용자금',borderColor:'#58a6ff',backgroundColor:'rgba(88,166,255,.12)',data:op,fill:true,tension:.25,pointRadius:0,borderWidth:1.8},
+    {label:'기준선',borderColor:'rgba(255,255,255,.25)',data:baseline,borderDash:[4,4],fill:false,pointRadius:0,borderWidth:1},
+  ]});
+
+  const all=[...allData].sort((a,b)=>parseTs(a.generated_at)-parseTs(b.generated_at));
+  const allLabels=all.map(d=>d.generated_at.slice(5,16));
+  const allOp=all.map(d=>d.current_operating_capital_krw);
+  const allTa=all.map(d=>d.account_total_asset_krw);
+  if(overviewChart)overviewChart.destroy();
+  overviewChart=buildChart(document.getElementById('overview'),{labels:allLabels,datasets:[
+    {label:'총자산',borderColor:'#a371f7',data:allTa,fill:false,tension:.2,pointRadius:0,borderWidth:1.4},
+    {label:'운용자금',borderColor:'#58a6ff',data:allOp,fill:false,tension:.2,pointRadius:0,borderWidth:1.4},
+  ]});
+}
+
+async function load(){
+  try{
+    const r=await fetch(HISTORY_URL+'?t='+Date.now());
+    allData=await r.json();
+    allData.sort((a,b)=>parseTs(a.generated_at)-parseTs(b.generated_at));
+    const latest=allData[allData.length-1];
+    document.getElementById('status').textContent=`${allData.length}건 로드 · 최신 ${latest.generated_at.replace('T',' ').slice(0,19)} KST · ${Math.round(REFRESH_MS/1000)}초 자동갱신`;
+    renderMetrics(latest);
+    renderTodayLog();
+    renderCharts();
+  }catch(e){
+    document.getElementById('status').textContent='오류: '+e.message;
+  }
+}
+
+document.getElementById('periodSel').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#periodSel button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');period=b.dataset.p;renderCharts();
+});
+
+load();
+setInterval(load,REFRESH_MS);
+</script>
+</body>
+</html>

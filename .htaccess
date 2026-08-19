@@ -1,0 +1,5 @@
+AuthType Basic
+AuthName "Jarvis Toss Dashboard"
+AuthUserFile /var/services/web/toss/.private/htpasswd
+Require valid-user
+Options -Indexes

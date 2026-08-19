@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>자비스 대시보드 - 로그인</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e2e8f0;
+        }
+        .login-container {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 16px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #f8fafc;
+        }
+        .login-header p {
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #cbd5e1;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 8px;
+            color: #f8fafc;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .btn-login {
+            width: 100%;
+            padding: 0.875rem;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-login:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            color: #fca5a5;
+            display: none;
+        }
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-top: 1.5rem;
+            font-size: 0.75rem;
+            color: #93c5fd;
+            text-align: center;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+        .bio-auth-section {
+            margin: 1.5rem 0;
+            padding: 1.25rem;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            border-radius: 12px;
+            text-align: center;
+        }
+        .bio-auth-section h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #34d399;
+            margin-bottom: 0.5rem;
+        }
+        .bio-auth-section p {
+            font-size: 0.8rem;
+            color: #6ee7b7;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+        .bio-auth-btn {
+            width: 100%;
+            padding: 0.875rem;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .bio-auth-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        .bio-auth-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .bio-auth-btn.register-mode {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+        .bio-auth-btn.register-mode:hover:not(:disabled) {
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+        .bio-auth-loading {
+            display: none;
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+        .bio-auth-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: #fca5a5;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🪶 자비스 대시보드</h1>
+            <p>로그인하여 대시보드에 접근하세요</p>
+        </div>
+        
+        <form id="loginForm">
+            <div id="errorMessage" class="error-message"></div>
+            
+            <div class="form-group">
+                <label for="username">아이디</label>
+                <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">비밀번호</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" required>
+            </div>
+            
+            <button type="submit" class="btn-login" id="loginBtn">로그인</button>
+            
+            <div class="loading" id="loading">인증 중...</div>
+        </form>
+
+        <div class="bio-auth-section" id="bioAuthSection" style="display:none">
+            <h3>Face ID / Touch ID</h3>
+            <p id="bioAuthDesc">기기 생체 인증으로 빠르게 로그인하세요</p>
+            <button class="bio-auth-btn" id="bioAuthBtn">
+                <span id="bioAuthBtnIcon">👤</span>
+                <span id="bioAuthBtnText">생체 인증으로 로그인</span>
+            </button>
+            <div class="bio-auth-loading" id="bioAuthLoading">인증 중...</div>
+            <div class="bio-auth-error" id="bioAuthError"></div>
+            <button class="bio-auth-btn register-mode" id="bioAuthRegisterBtn" style="margin-top:0.75rem; display:none">
+                <span>🔐</span>
+                <span>Face ID / Touch ID 등록하기 (최초 1회)</span>
+            </button>
+        </div>
+
+        <div class="info-box">
+            ✅ 로그인 시 30일 동안 자동 로그인 유지<br>
+            🔒 Safari Face ID / Touch ID 지원 (최초 1회 등록 필요)
+        </div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showError('아이디와 비밀번호를 입력해주세요.');
+                return;
+            }
+            
+            loginBtn.disabled = true;
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
+            
+            try {
+                const base64Credentials = btoa(`${username}:${password}`);
+                
+                const response = await fetch('/toss/toss-auth.php', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Basic ${base64Credentials}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    window.location.href = '/toss/';
+                } else {
+                    showError(data.error || '로그인에 실패했습니다.');
+                }
+            } catch (error) {
+                showError('네트워크 오류가 발생했습니다.');
+            } finally {
+                loginBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+        
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        // ── WebAuthn: Face ID / Touch ID (등록·인증) ──────────────────
+        (function () {
+            const bioAuthSection = document.getElementById('bioAuthSection');
+            const bioAuthDesc = document.getElementById('bioAuthDesc');
+            const bioAuthBtn = document.getElementById('bioAuthBtn');
+            const bioAuthBtnIcon = document.getElementById('bioAuthBtnIcon');
+            const bioAuthBtnText = document.getElementById('bioAuthBtnText');
+            const bioAuthLoading = document.getElementById('bioAuthLoading');
+            const bioAuthError = document.getElementById('bioAuthError');
+            const bioAuthRegisterBtn = document.getElementById('bioAuthRegisterBtn');
+
+            const WEBAUTHN_REGISTER_OPTIONS_URL = '/toss/toss-auth.php?action=webauthn-register-options&';
+            const WEBAUTHN_REGISTER_VERIFY_URL = '/toss/toss-auth.php?action=webauthn-register-verify';
+            const WEBAUTHN_AUTH_OPTIONS_URL = '/toss/toss-auth.php?action=webauthn-auth-options';
+            const WEBAUTHN_AUTH_VERIFY_URL = '/toss/toss-auth.php?action=webauthn-auth-verify';
+
+            let isRegistered = false;
+
+            function showBioError(msg) {
+                bioAuthError.textContent = msg;
+                bioAuthError.style.display = 'block';
+            }
+            function hideBioError() {
+                bioAuthError.textContent = '';
+                bioAuthError.style.display = 'none';
+            }
+            function showBioLoading(on) {
+                bioAuthLoading.style.display = on ? 'block' : 'none';
+                bioAuthBtn.disabled = on;
+                bioAuthRegisterBtn.disabled = on;
+            }
+            function showRegisterMode() {
+                isRegistered = false;
+                bioAuthDesc.textContent = '처음 이용 시 Face ID / Touch ID를 한 번 등록해야 합니다.';
+                bioAuthBtnIcon.textContent = '🔐';
+                bioAuthBtnText.textContent = 'Face ID / Touch ID 등록하기';
+                bioAuthBtn.classList.add('register-mode');
+                bioAuthBtn.style.display = 'block';
+                bioAuthRegisterBtn.style.display = 'none';
+                hideBioError();
+                showBioLoading(false);
+            }
+            function showAuthMode() {
+                isRegistered = true;
+                bioAuthDesc.textContent = '기기 생체 인증으로 빠르게 로그인하세요';
+                bioAuthBtnIcon.textContent = '👤';
+                bioAuthBtnText.textContent = '생체 인증으로 로그인';
+                bioAuthBtn.classList.remove('register-mode');
+                bioAuthBtn.style.display = 'block';
+                bioAuthRegisterBtn.style.display = 'none';
+                hideBioError();
+                showBioLoading(false);
+            }
+            function goDashboard() {
+                window.location.href = '/toss/';
+            }
+            function getUsername() {
+                const el = document.getElementById('username');
+                return el && el.value.trim() ? el.value.trim() : 'user';
+            }
+
+            // 옵션으로 자격이 있으면 등록됨, 없으면 미등록 상태로 버튼 전환
+            async function refreshBioState() {
+                try {
+                    const res = await fetch(WEBAUTHN_AUTH_OPTIONS_URL, { cache: 'no-store' });
+                    const data = await res.json().catch(function () { return null; });
+                    if (data && data.allowCredentials && data.allowCredentials.length > 0) {
+                        showAuthMode();
+                        return true;
+                    } else {
+                        showRegisterMode();
+                        return false;
+                    }
+                } catch (e) {
+                    showRegisterMode();
+                    return false;
+                }
+            }
+
+            bioAuthBtn.addEventListener('click', async function () {
+                if (isRegistered) {
+                    await doAuth();
+                } else {
+                    await doRegister();
+                }
+            });
+            bioAuthRegisterBtn.addEventListener('click', async function () {
+                await doRegister();
+            });
+
+            async function doRegister() {
+                hideBioError();
+                showBioLoading(true);
+                try {
+                    const username = getUsername();
+                    const optUrl = WEBAUTHN_REGISTER_OPTIONS_URL + 'username='
+                        + encodeURIComponent(username);
+                    const optRes = await fetch(optUrl, { cache: 'no-store' });
+                    if (!optRes.ok) {
+                        const err = await optRes.json().catch(function () { return { error: '등록 옵션을 가져오지 못했습니다.' }; });
+                        throw new Error(err.error || '등록 옵션 요청 실패');
+                    }
+                    const options = await optRes.json();
+                    if (options.error) {
+                        throw new Error(options.error);
+                    }
+
+                    const publicKey = {
+                        challenge: base64urlToBuffer(options.challenge),
+                        rp: {
+                            name: options.rp && options.rp.name ? options.rp.name : '자비스 대시보드',
+                            id: options.rp && options.rp.id ? options.rp.id : window.location.hostname,
+                        },
+                        user: {
+                            id: base64urlToBuffer(options.user && options.user.id ? options.user.id : ''),
+                            name: options.user && options.user.name ? options.user.name : username,
+                            displayName: options.user && options.user.displayName ? options.user.displayName : username,
+                        },
+                        pubKeyCredParams: [{ type: 'public-key', alg: -35 }],
+                        authenticatorSelection: {
+                            authenticatorAttachment: 'platform',
+                            userVerification: 'required',
+                        },
+                        attestation: 'none',
+                        timeout: 60000,
+                    };
+
+                    const credential = await navigator.credentials.create({ publicKey });
+                    if (!credential) {
+                        throw new Error('생체 인증 등록이 취소되었습니다.');
+                    }
+
+                    const clientDataJSON = base64urlEncode(
+                        new Uint8Array(credential.response.clientDataJSON)
+                    );
+                    const attestationObject = base64urlEncode(
+                        new Uint8Array(credential.response.attestationObject)
+                    );
+
+                    const verifyPayload = {
+                        username: username,
+                        response: {
+                            clientDataJSON: clientDataJSON,
+                            attestationObject: attestationObject,
+                            credentialId: base64urlEncode(new Uint8Array(credential.rawId)),
+                        },
+                    };
+
+                    const verifyRes = await fetch(WEBAUTHN_REGISTER_VERIFY_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(verifyPayload),
+                    });
+                    const verifyData = await verifyRes.json();
+                    if (!verifyRes.ok || !verifyData.ok) {
+                        throw new Error(verifyData.error || '등록 검증 실패');
+                    }
+
+                    isRegistered = true;
+                    showAuthMode();
+                    showBioLoading(false);
+                } catch (e) {
+                    showBioLoading(false);
+                    if (e.message && (e.message.includes('취소') || e.message.includes('canceled'))) {
+                        showRegisterMode();
+                    } else {
+                        showBioError(e.message || 'Face ID / Touch ID 등록에 실패했습니다.');
+                    }
+                }
+            }
+
+            async function doAuth() {
+                hideBioError();
+                showBioLoading(true);
+                try {
+                    const optRes = await fetch(WEBAUTHN_AUTH_OPTIONS_URL, { cache: 'no-store' });
+                    if (!optRes.ok) {
+                        const err = await optRes.json().catch(function () { return { error: '인증 옵션을 가져오지 못했습니다.' }; });
+                        throw new Error(err.error || '인증 옵션 요청 실패');
+                    }
+                    const options = await optRes.json();
+                    if (options.error) {
+                        throw new Error(options.error);
+                    }
+
+                    const allowCreds = (options.allowCredentials || []).map(function (c) {
+                        return {
+                            type: 'public-key',
+                            id: base64urlToBuffer(c.id),
+                        };
+                    });
+
+                    const publicKey = {
+                        challenge: base64urlToBuffer(options.challenge || ''),
+                        timeout: 60000,
+                        rpId: options.rpId || window.location.hostname,
+                        allowCredentials: allowCreds.length > 0 ? allowCreds : undefined,
+                        userVerification: 'required',
+                    };
+
+                    const assertion = await navigator.credentials.get({ publicKey });
+                    if (!assertion) {
+                        throw new Error('생체 인증이 취소되었습니다.');
+                    }
+
+                    const clientDataJSON = base64urlEncode(
+                        new Uint8Array(assertion.response.clientDataJSON)
+                    );
+                    const authenticatorData = base64urlEncode(
+                        new Uint8Array(assertion.response.authenticatorData)
+                    );
+                    const signature = base64urlEncode(
+                        new Uint8Array(assertion.response.signature)
+                    );
+
+                    const verifyPayload = {
+                        response: {
+                            clientDataJSON: clientDataJSON,
+                            authenticatorData: authenticatorData,
+                            signature: signature,
+                            credentialId: base64urlEncode(new Uint8Array(assertion.rawId)),
+                        },
+                    };
+
+                    const verifyRes = await fetch(WEBAUTHN_AUTH_VERIFY_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(verifyPayload),
+                    });
+                    const verifyData = await verifyRes.json();
+
+                    if (!verifyRes.ok || !verifyData.ok) {
+                        throw new Error(verifyData.error || '생체 인증 검증에 실패했습니다.');
+                    }
+
+                    showBioLoading(false);
+                    goDashboard();
+                } catch (e) {
+                    showBioLoading(false);
+                    if (e.message && (e.message.includes('취소') || e.message.includes('canceled'))) {
+                        showAuthMode();
+                    } else {
+                        showBioError(e.message || 'Face ID / Touch ID 인증에 실패했습니다.');
+                    }
+                }
+            }
+
+            function base64urlToBuffer(str) {
+                str = String(str).replace(/-/g, '+').replace(/_/g, '/');
+                while (str.length % 4) str += '=';
+                const bin = atob(str);
+                const buf = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+                return buf.buffer;
+            }
+            function base64urlEncode(bytes) {
+                const bin = String.fromCharCode.apply(null, bytes);
+                return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            }
+
+            // 초기 상태
+            refreshBioState().then(function (ok) {
+                if (bioAuthSection) bioAuthSection.style.display = 'block';
+            });
+        })();
+    </script>
+</body>
+</html>
