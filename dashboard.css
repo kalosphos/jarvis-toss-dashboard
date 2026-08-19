@@ -418,16 +418,39 @@ h3 {
   color: var(--muted);
 }
 
-.asset-chart .chart-area-up {
-  fill: #ef4444;
+/* ===== 그래프 색상/해치 통일 정의 (단일 출처) =====
+   모든 그래프(1D/7D/1M/ALL)는 이 클래스만 사용.
+   색 변경 시 이 블록만 수정하면 전체 반영됨. */
+.asset-chart .chart-area-up,
+.asset-chart .chart-hatch-up {
+  fill: #ef4444;          /* 상승 = 빨강 */
+}
+.asset-chart .chart-area-down,
+.asset-chart .chart-hatch-down {
+  fill: #3b82f6;          /* 하락 = 파랑 */
+}
+.asset-chart .chart-area-up,
+.asset-chart .chart-area-down {
   fill-opacity: 0.22;
   stroke: none;
 }
-
-.asset-chart .chart-area-down {
-  fill: #3b82f6;
-  fill-opacity: 0.22;
-  stroke: none;
+.asset-chart .chart-hatch-up {
+  fill: url(#chart-hatch-up);   /* 빨강 대각선 해치 */
+}
+.asset-chart .chart-hatch-down {
+  fill: url(#chart-hatch-down); /* 파랑 대각선 해치 */
+}
+.asset-chart .chart-line-up {
+  stroke: #ef4444;
+  stroke-width: 2;
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+.asset-chart .chart-line-down {
+  stroke: #3b82f6;
+  stroke-width: 2;
+  fill: none;
+  vector-effect: non-scaling-stroke;
 }
 
 .asset-chart .chart-baseline,

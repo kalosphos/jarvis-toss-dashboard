@@ -85,9 +85,16 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
           <svg class="asset-chart" id="asset-chart" role="img" aria-label="총자산 추이">
             <defs>
               <linearGradient id="chart-fill-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="#f28b82" stop-opacity="0.25"></stop>
-                <stop offset="100%" stop-color="#f28b82" stop-opacity="0"></stop>
+                <stop offset="0%" stop-color="#ef4444" stop-opacity="0.25"></stop>
+                <stop offset="100%" stop-color="#ef4444" stop-opacity="0"></stop>
               </linearGradient>
+              <!-- 그래프 해치 패턴 (모든 그래프 통일, dashboard.css가 참조) -->
+              <pattern id="chart-hatch-up" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#ef4444" stroke-width="1" stroke-opacity="0.18"></line>
+              </pattern>
+              <pattern id="chart-hatch-down" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.18"></line>
+              </pattern>
             </defs>
           </svg>
           <div class="asset-chart-hover" id="asset-chart-hover" hidden>
@@ -391,7 +398,7 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
       chart.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
       const svgDefs = svgCreate("defs");
-      svgDefs.innerHTML = '<linearGradient id="chart-fill-gradient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#f28b82" stop-opacity="0.25"></stop><stop offset="100%" stop-color="#f28b82" stop-opacity="0"></stop></linearGradient>';
+      svgDefs.innerHTML = '<linearGradient id="chart-fill-gradient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ef4444" stop-opacity="0.25"></stop><stop offset="100%" stop-color="#ef4444" stop-opacity="0"></stop></linearGradient>';
       chart.append(svgDefs);
 
       // 해상도별 데이터 소스 분기:
@@ -522,15 +529,15 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
       const areaPath = "M " + xs[0] + " " + (height - padBottom) + " L " + runs.map((_, i) => xs[i] + " " + ys[i]).join(" L ") + " L " + xs[xs.length - 1] + " " + (height - padBottom) + " Z";
       const linePoints = runs.map((_, i) => xs[i] + "," + ys[i]).join(" ");
 
-      // 1일 탭: 토스 스타일 (기간 시작 대비 상승/하락 단일 톤, 클립 분할 없음)
-      // 인라인 스타일 직접 지정 (CSS 캐시/의존 제거)
+      // 1일 탭: 토스 스타일 (단일 톤, 클립 분할 없음). 색/해치는 dashboard.css 한 곳에서 정의.
       const isTossDayStyle = state.assetPeriod === "1d";
       if (isTossDayStyle) {
-        const toneColor = tone === "up" ? "#6ea8fe" : (tone === "down" ? "#f28b82" : "var(--muted)");
-        const toneFill = tone === "up" ? "rgba(110,168,254,0.18)" : (tone === "down" ? "rgba(242,139,130,0.18)" : "rgba(150,150,150,0.15)");
-        const areaDay = svgCreate("path", { d: areaPath, fill: toneFill, stroke: "none" });
+        const toneCls = tone === "up" ? "up" : (tone === "down" ? "down" : "");
+        const areaDay = svgCreate("path", { d: areaPath, class: "chart-area chart-area-" + toneCls });
         chart.append(areaDay);
-        const lineDay = svgCreate("polyline", { points: linePoints, fill: "none", stroke: toneColor, "stroke-width": "2", "vector-effect": "non-scaling-stroke" });
+        const hatchDay = svgCreate("path", { d: areaPath, class: "chart-hatch-" + toneCls });
+        chart.append(hatchDay);
+        const lineDay = svgCreate("polyline", { points: linePoints, class: "chart-line chart-line-" + toneCls });
         chart.append(lineDay);
       } else {
       // 상/하 클립 영역 정의 (기준선 기준 분할 색상)
@@ -542,15 +549,21 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
         '<clipPath id="' + clipBottom + '"><rect x="0" y="' + principalY + '" width="' + width + '" height="' + (height - principalY) + '"></rect></clipPath>';
       chart.append(defsClip);
 
-      // 위 영역 (붉은색)
+      // 위 영역 (붉은색) + 해치
       const areaTop = svgCreate("path", { d: areaPath, class: "chart-area chart-area-up" });
       areaTop.setAttribute("clip-path", "url(#" + clipTop + ")");
       chart.append(areaTop);
+      const hatchTop = svgCreate("path", { d: areaPath, class: "chart-hatch-up" });
+      hatchTop.setAttribute("clip-path", "url(#" + clipTop + ")");
+      chart.append(hatchTop);
 
-      // 아래 영역 (파란색)
+      // 아래 영역 (파란색) + 해치
       const areaBottom = svgCreate("path", { d: areaPath, class: "chart-area chart-area-down" });
       areaBottom.setAttribute("clip-path", "url(#" + clipBottom + ")");
       chart.append(areaBottom);
+      const hatchBottom = svgCreate("path", { d: areaPath, class: "chart-hatch-down" });
+      hatchBottom.setAttribute("clip-path", "url(#" + clipBottom + ")");
+      chart.append(hatchBottom);
 
       // 라인 (위/아래 분할)
       const lineTop = svgCreate("polyline", { points: linePoints, class: "chart-line chart-line-up" });
