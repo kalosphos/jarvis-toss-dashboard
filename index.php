@@ -1101,6 +1101,7 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
           "missing_current_price_krw": "현재가 없음",
           // buy actions
           "no_chasing_or_unknown_change_rate": "추격 금지 rule — 스킵",
+          "regular_market_closed": "시장 장외",
           "kr_regular_market_closed": "한국시장 장외",
           "us_regular_market_closed": "미국시장 장외",
           "daily_change_rate_unavailable": "변동률 조회 불가",
@@ -1115,9 +1116,26 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
           "human_confirmation_required": "인간 확인 필요",
           "order_placed": "주문 실행됨",
           "order_failed": "주문 실패",
-          "order_cancelled": "주문 취소됨"
+          "order_cancelled": "주문 취소됨",
+          // 매수 후보 필터링 / 스킵 사유
+          "all_candidates_filtered": "모든 후보 종목 필터링됨",
+          "fresh_tossctl_quote_unavailable": "토스 실시간 호가 조회 불가",
+          "quote_budget_exhausted": "호가 조회 예산 소진"
         };
-        const reasonText = reasonMap[item.reason] || item.reason || "";
+        // 일일 변동률 패턴 (예: "daily_rate -0.0566 <= -0.01") → 한글 변환
+        let reasonText;
+        if (item.reason && item.reason.startsWith("daily_rate ")) {
+          const m = item.reason.match(/daily_rate\s+(-?[\d.]+)\s*<=?\s*(-?[\d.]+)/);
+          if (m) {
+            const rate = (parseFloat(m[1]) * 100);
+            const threshold = (parseFloat(m[2]) * 100);
+            reasonText = `일일 변동률 ${rate.toFixed(2)}% (기준 ${threshold.toFixed(2)}% 이하)`;
+          } else {
+            reasonText = item.reason;
+          }
+        } else {
+          reasonText = reasonMap[item.reason] || item.reason || "";
+        }
         body.textContent = reasonText ? item.symbol + " - " + reasonText : item.symbol;
         
         content.append(header, body);
