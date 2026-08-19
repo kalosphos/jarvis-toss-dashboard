@@ -80,7 +80,6 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
       <div class="asset-chart-container">
         <div class="asset-change-wrap">
           <div class="asset-change" id="asset-change"></div>
-          <div class="asset-prev-close" id="asset-prev-close"></div>
         </div>
         <div class="asset-chart-wrap">
           <svg class="asset-chart" id="asset-chart" role="img" aria-label="총자산 추이">
@@ -376,7 +375,6 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
       const chart = byId("asset-chart");
       const empty = byId("asset-chart-empty");
       const change = byId("asset-change");
-      const prevCloseEl = byId("asset-prev-close");
       const hover = byId("asset-chart-hover");
       const hoverValue = byId("asset-chart-hover-value");
       const hoverTime = byId("asset-chart-hover-time");
@@ -431,7 +429,6 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
       chart.hidden = runs.length < 2;
       empty.hidden = runs.length >= 2;
       change.hidden = runs.length < 2;
-      prevCloseEl.hidden = runs.length < 2;
       hover.hidden = runs.length < 2;
       xaxis.hidden = runs.length < 2;
       if (runs.length < 2) return;
@@ -470,11 +467,6 @@ $dashboardCssVersion = is_file($dashboardCss) ? (string) filemtime($dashboardCss
       const difference = last.v - first.v;
       const rate = first.v ? difference / first.v : 0;
       const tone = pnlClass(difference);
-
-      // 투자 원금 라벨 (초기 운용 자본)
-      const principalText = principal !== null ? "투자원금 " + formatKrw(principal) + "원" : "";
-      prevCloseEl.className = "asset-prev-close" + (tone ? " " + tone : "");
-      prevCloseEl.textContent = principalText;
 
       // 변화 카드
       const changeText = (difference > 0 ? "+" : "") + formatKrw(difference) + "원 (" + formatPct(rate) + ")";
